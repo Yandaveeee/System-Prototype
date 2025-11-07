@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - CampusCore</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="assets/icons/favicon.ico">
+    <style>
+        /* Apply Inter font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple spinner for loading */
+        .loading-spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s;
+        }
+        .hidden {
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="loading" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Back to Home Link -->
+    <a href="/" class="absolute top-8 left-8 text-sm font-medium text-indigo-600 hover:text-indigo-500 z-10">
+        &larr; Back to Home
+    </a>
+    
+    <main class="flex min-h-screen items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="w-full max-w-md space-y-8">
+            <!-- Header -->
+            <div>
+                <a href="/" class="mx-auto h-12 w-auto text-3xl font-bold text-center block text-indigo-600">CampusCore</a>
+                <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+                    Create your account
+                </h2>
+                <p class="mt-2 text-center text-sm text-gray-600">
+                    Join the campus community today.
+                </p>
+            </div>
+
+            <!-- Error Message -->
+            <div id="error-message" class="hidden rounded-md bg-red-50 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <!-- Heroicon: x-circle -->
+                        <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 id="error-message-text" class="text-sm font-medium text-red-800"></h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Register Form -->
+            <form id="register-form" class="mt-8 space-y-6">
+                <div class="space-y-4 rounded-md shadow-sm">
+                    <div>
+                        <label for="fullName" class="sr-only">Full Name</label>
+                        <input id="fullName" name="fullName" type="text" autocomplete="name" required
+                               class="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-3 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                               placeholder="Full Name">
+                    </div>
+                    <div>
+                        <label for="email" class="sr-only">Email address</label>
+                        <input id="email" name="email" type="email" autocomplete="email" required
+                               class="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-3 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                               placeholder="Email address">
+                    </div>
+                     <div>
+                        <label for="studentId" class="sr-only">Student ID</label>
+                        <input id="studentId" name="studentId" type="text" required
+                               class="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-3 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                               placeholder="Student ID">
+                    </div>
+                    <div>
+                        <label for="password" class="sr-only">Password</label>
+                        <input id="password" name="password" type="password" autocomplete="new-password" required minlength="6"
+                               class="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-3 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                               placeholder="Password (min. 6 characters)">
+                    </div>
+                    <div>
+                        <label for="confirmPassword" class="sr-only">Confirm Password</label>
+                        <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required minlength="6"
+                               class="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-3 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                               placeholder="Confirm Password">
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit"
+                            class="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 py-3 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Create Account
+                    </button>
+                </div>
+            </form>
+
+            <!-- Divider -->
+            <div class="relative">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-300"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="bg-gray-50 px-2 text-gray-500">or</span>
+                </div>
+            </div>
+
+            <!-- Google Sign-in -->
+            <div>
+                <button id="google-signin"
+                        class="group relative flex w-full justify-center rounded-md border border-gray-300 bg-white py-3 px-4 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 18 18">
+                        <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
+                        <path fill="#34A853" d="M8.98 16c2.16 0 3.97-.72 5.3-1.94l-2.6-2.04a4.8 4.8 0 0 1-2.7.75 4.8 4.8 0 0 1-4.52-3.36H1.83v2.07A8 8 0 0 0 8.98 16z"/>
+                        <path fill="#FBBC05" d="M4.46 9.41a4.8 4.8 0 0 1 0-2.82V4.52H1.83a8 8 0 0 0 0 7.17l2.63-2.08z"/>
+                        <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 8.98 0 8 8 0 0 0 1.83 4.52l2.63 2.08A4.8 4.8 0 0 1 8.98 4.18z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+            </div>
+            
+            <!-- Sign In Link -->
+            <div class="text-center text-sm text-gray-600">
+                Already have an account?
+                <a href="login.html" class="font-medium text-indigo-600 hover:text-indigo-500">
+                    Sign in
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <script src="js/config/firebase.js"></script>
+    <script src="js/modules/auth.js"></script>
+    <script src="js/modules/database.js"></script>
+    <script src="js/modules/ui.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const registerForm = document.getElementById('register-form');
+            const googleSigninBtn = document.getElementById('google-signin');
+            const errorMessageContainer = document.getElementById('error-message');
+            const errorMessageText = document.getElementById('error-message-text');
+
+            // Handle form registration
+            registerForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const fullName = document.getElementById('fullName').value;
+                const email = document.getElementById('email').value;
+                const studentId = document.getElementById('studentId').value;
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (password !== confirmPassword) {
+                    showError('Passwords do not match');
+                    return;
+                }
+                
+                showLoading();
+                try {
+                    const userCredential = await AuthModule.createAccount(email, password);
+                    const user = userCredential.user;
+                    
+                    // Set display name right after creation
+                    await user.updateProfile({ displayName: fullName });
+
+                    // Create the user profile in the database
+                    await DatabaseModule.createUserProfile(user.uid, {
+                        fullName: fullName,
+                        email: email,
+                        studentId: studentId,
+                        role: 'student',
+                        createdAt: new Date().toISOString()
+                    });
+                    
+                    // Redirect to main dashboard (will be handled by auth listener)
+                    // window.location.href = 'dashboard.html';
+                } catch (error) {
+                    hideLoading();
+                    showError(error.message);
+                }
+            });
+
+            // Handle Google registration
+            googleSigninBtn.addEventListener('click', async function() {
+                showLoading();
+                try {
+                    const result = await AuthModule.signInWithGoogle();
+                    const user = result.user;
+                    
+                    const profile = await DatabaseModule.getUserProfile(user.uid);
+                    if (!profile) {
+                        // This is a new user, create their profile
+                        await DatabaseModule.createUserProfile(user.uid, {
+                            fullName: user.displayName || 'Student',
+                            email: user.email,
+                            studentId: '', // Google sign-in won't have this
+                            role: 'student',
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                    
+                    // Redirect (will be handled by auth listener)
+                    // window.location.href = 'dashboard.html';
+                } catch (error) {
+                    hideLoading();
+                    showError(error.message);
+                }
+            });
+
+            function showError(message) {
+                let friendlyMessage = message;
+                if (message.includes('auth/email-already-in-use')) {
+                    friendlyMessage = 'This email address is already in use. Please sign in.';
+                } else if (message.includes('auth/weak-password')) {
+                    friendlyMessage = 'Password is too weak. Please use at least 6 characters.';
+                } else if (message.includes('auth/invalid-email')) {
+                    friendlyMessage = 'Please enter a valid email address.';
+                }
+
+                errorMessageText.textContent = friendlyMessage;
+                errorMessageContainer.classList.remove('hidden');
+                setTimeout(() => {
+                    errorMessageContainer.classList.add('hidden');
+                }, 5000);
+            }
+
+            function showLoading() {
+                document.getElementById('loading').classList.remove('hidden');
+            }
+
+            function hideLoading() {
+                document.getElementById('loading').classList.add('hidden');
+            }
+
+            // Auth state listener to handle redirects
+            AuthModule.onAuthStateChanged((user) => {
+                hideLoading();
+                if (user) {
+                    // User is logged in, redirect them
+                    AuthModule.getUserRole(user.uid).then(role => {
+                        if (role === 'admin') {
+                            window.location.href = 'admin/dashboard.html';
+                        } else {
+                            window.location.href = 'dashboard.html';
+                        }
+                    }).catch(error => {
+                        // Fallback, just send to dashboard
+                        console.error("Error getting user role:", error);
+                        window.location.href = 'dashboard.html';
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

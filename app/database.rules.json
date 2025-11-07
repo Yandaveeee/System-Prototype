@@ -1,0 +1,68 @@
+{
+  "rules": {
+    ".read": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+    ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+    
+    "announcements": { ".read": "auth != null" },
+    "events": { ".read": "auth != null" },
+    "resources": { ".read": "auth != null" },
+    "resource_categories": { ".read": "auth != null" },
+
+    "marketplace": {
+      ".read": "auth != null",
+      ".indexOn": ["quantity", "createdAt"]
+    },
+    "lost_found_items": {
+      ".read": "auth != null",
+      "$item_id": {
+        ".write": "auth != null && (!data.exists() || data.child('reporterId').val() === auth.uid)"
+      }
+    },
+
+    "users": {
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid",
+        ".write": "auth != null && $uid === auth.uid"
+      }
+    },
+    "carts": {
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid",
+        ".write": "auth != null && $uid === auth.uid"
+      }
+    },
+    "user_read_status": {
+       "announcements": {
+         "$uid": {
+           ".read": "auth != null && $uid === auth.uid",
+           ".write": "auth != null && $uid === auth.uid"
+         }
+       }
+    },
+
+    "orders": {
+      ".indexOn": ["userId", "status"], 
+      ".read": "auth != null && query.orderByChild === 'userId' && query.equalTo === auth.uid",
+      
+      "$order_id": {
+        ".write": "auth != null && !data.exists() && newData.child('userId').val() === auth.uid",
+        ".read": "data.child('userId').val() === auth.uid"
+      }
+    },
+
+    "event_rsvps_by_user": {
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid",
+        ".write": "auth != null && $uid === auth.uid"
+      }
+    },
+    "event_rsvps_by_event": {
+      "$event_id": {
+        ".read": "auth != null", 
+        "$uid": {
+          ".write": "auth != null && $uid === auth.uid"
+        }
+      }
+    }
+  }
+}
