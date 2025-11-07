@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Events - CampusCore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="../assets/icons/favicon.ico"> 
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        :root { --primary-color: #4f46e5; --primary-hover: #4338ca; --text-primary: #111827; --text-secondary: #6b7280; --bg-body: #f9fafb; --bg-sidebar: #ffffff; --bg-content: #ffffff; --border-color: #e5e7eb; --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05); --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); --radius: 0.5rem; }
+        .sidebar { transition: transform 0.3s ease-in-out; }
+        .sidebar.is-open { transform: translateX(0); box-shadow: var(--shadow-md); }
+        .loading-spinner { border: 4px solid #f3f4f6; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        .loading-overlay { position: fixed; inset: 0; background-color: rgba(255, 255, 255, 0.9); display: none; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.3s; }
+        .hidden { display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .notification-badge { position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; background-color: #ef4444; border-radius: 50%; border: 2px solid var(--bg-content); transform: scale(0); transition: transform 0.2s ease-out; }
+        .notification-badge.visible { transform: scale(1); }
+        .profile-dropdown, .notification-dropdown { z-index: 50; }
+        /* Modal Styles */
+        .modal-overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+        .modal-content { background-color: white; border-radius: 0.5rem; box-shadow: var(--shadow-md); width: 100%; max-width: 550px; max-height: 90vh; overflow-y: auto; }
+        /* Table Style */
+        .data-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .data-table th, .data-table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        .data-table th { font-weight: 600; color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase; background-color: #f9fafb; }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+        .item-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        /* Status Badge */
+        .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .status-upcoming { background-color: #dcfce7; color: #166534; } /* Green */
+        .status-past { background-color: #fee2e2; color: #991b1b; } /* Red */
+        /* ADDED: New 'Ongoing' status style */
+        .status-ongoing { background-color: #dbeafe; color: #1d4ed8; } /* Blue */
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="loading" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-[260px_1fr] h-screen">
+        <aside id="admin-sidebar" class="bg-white border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 w-64 z-30 transform -translate-x-full md:translate-x-0 md:static">
+             <div class="px-6 py-4 border-b border-gray-200">
+                <a href="dashboard.html" class="text-2xl font-bold text-indigo-600">CampusCore</a>
+            </div>
+            <nav class="flex-grow p-4 space-y-1">
+                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    Dashboard
+                </a>
+                <a href="manage-announcements.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.144-6.126A.75.75 0 015.5 12.632v-1.264a.75.75 0 01.621-.74l6.164-1.898a.75.75 0 01.88 0l6.164 1.898a.75.75 0 01.621.74v1.264a.75.75 0 01-.121.402l-2.144 6.126A1.76 1.76 0 0113 19.24V5.882" /></svg>
+                    Announcements
+                </a>
+                <a href="manage-events.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md bg-indigo-600 text-white">
+                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    Events
+                </a>
+                <a href="manage-resources.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    Resources
+                </a>
+                 <a href="manage-lost-found.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 10.5a.5.5 0 01.5-.5h3a.5.5 0 010 1h-3a.5.5 0 01-.5-.5z" /></svg>
+                    Lost & Found
+                </a>
+                 <a href="manage-marketplace.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    Marketplace
+                </a>
+                <a href="manage-orders.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002-2h2a2 2 0 002 2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 9h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                    Manage Orders
+                </a>
+                <a href="manage-users.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    Manage Users
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-content h-screen overflow-y-auto">
+             <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200">
+                <div class="px-4 sm:px-6 lg:px-8">
+                    <div class="flex h-16 items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                            <button id="hamburger-btn" class="text-gray-500 md:hidden">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
+                            </button>
+                            <h1 class="text-xl font-semibold text-gray-900">Manage Events</h1>
+                        </div>
+                        <div class="flex items-center gap-4">
+                             <button id="new-event-btn" class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                New Event
+                            </button>
+                            <div class="relative">
+                                <button id="notification-bell" class="relative rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.017 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+                                    <span id="notification-badge" class="notification-badge"></span>
+                                </button>
+                                <div id="notification-dropdown" class="absolute right-0 mt-2 w-80 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden">
+                                    <div class="py-1">
+                                         <div class="px-4 py-2 text-sm font-semibold text-gray-900 border-b border-gray-200">New Orders</div>
+                                         <ul id="notification-list" class="max-h-60 overflow-y-auto">
+                                            <li class="notification-empty px-4 py-3 text-sm text-gray-500 text-center">No new orders.</li>
+                                         </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <button id="user-profile" class="flex items-center rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                    <span class="sr-only">Open user menu</span>
+                                    <div id="header-user-avatar" class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-sm font-medium text-white overflow-hidden">A</div>
+                                </button>
+                                <div id="profile-dropdown" class="absolute right-0 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden">
+                                    <div class="py-1">
+                                        <div class="border-b border-gray-200 px-4 py-3">
+                                            <p id="profile-name" class="text-sm font-medium text-gray-900 truncate">Admin Name</p>
+                                            <p id="profile-email" class="text-sm text-gray-500 truncate">admin@example.com</p>
+                                        </div>
+                                        <div class="py-1">
+                                            <a href="profile.html" class="flex items-center gap-2 text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100">
+                                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                                View Profile
+                                            </a>
+                                        </div>
+                                        <div class="border-t border-gray-200 py-1">
+                                             <button id="profile-menu-logout" class="flex items-center gap-2 text-gray-700 block w-full px-4 py-2 text-left text-sm hover:bg-gray-100">
+                                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                                                Logout
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="p-4 sm:p-6 lg:p-8">
+                <div class="overflow-hidden rounded-lg bg-white shadow border border-gray-200">
+                    <div class="flex flex-wrap items-center gap-4 p-4 border-b border-gray-200 bg-gray-50">
+                        <div class="relative flex-grow max-w-xs">
+                             <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg>
+                            </span>
+                            <input type="search" id="search-events" class="w-full rounded-md border border-gray-300 py-2 pl-10 pr-4 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Search by title...">
+                        </div>
+                         <select id="filter-events" class="rounded-md border border-gray-300 py-2 pl-3 pr-8 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <option value="all">All Events</option>
+                            <option value="upcoming">Upcoming & Ongoing</option> <option value="past">Past Events</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="data-table min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th>Event Title</th>
+                                    <th>Date & Time</th>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                    <th class="text-center">RSVPs</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="events-table-body" class="divide-y divide-gray-200 bg-white">
+                                <tr><td colspan="6" class="p-6 text-center text-gray-500">Loading events...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                     <div id="events-empty-state" class="p-6 text-center text-gray-500 hidden">No events found matching your criteria.</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <script src="../js/config/firebase.js"></script>
+
+    <script>
+        // --- Shared UI Functions ---
+        function setupProfileDropdown(user) {
+            // (Same as your file, unchanged)
+            const userProfileButton = document.getElementById('user-profile');
+            const dropdown = document.getElementById('profile-dropdown');
+            if (!userProfileButton || !dropdown || !user) return;
+            document.getElementById('profile-name').textContent = user.displayName || 'Admin';
+            document.getElementById('profile-email').textContent = user.email || 'No Email';
+            updateAvatarDisplays(user.photoURL, user.displayName);
+            userProfileButton.addEventListener('click', (event) => { 
+                event.stopPropagation(); 
+                dropdown.classList.toggle('hidden'); 
+                document.getElementById('notification-dropdown')?.classList.add('hidden'); 
+            });
+            document.getElementById('profile-menu-logout').addEventListener('click', () => { 
+                if (confirm('Are you sure you want to logout?')) { 
+                    firebase.auth().signOut().then(() => window.location.href = '../login.html'); 
+                } 
+            });
+        }
+
+        function updateAvatarDisplays(imageUrl, displayName) {
+            // (Same as your file, unchanged)
+             const avatar = document.getElementById('header-user-avatar');
+             if (!avatar) return;
+             const initial = (displayName || 'A').charAt(0).toUpperCase();
+             avatar.innerHTML = imageUrl ? `<img src="${imageUrl}" alt="Profile" class="h-full w-full object-cover">` : initial;
+        }
+
+        function initNotifications(user) {
+            // (Same as your file, unchanged)
+             const bell = document.getElementById('notification-bell'); 
+             const badge = document.getElementById('notification-badge'); 
+             const dropdown = document.getElementById('notification-dropdown'); 
+             const list = document.getElementById('notification-list'); 
+             const emptyState = document.querySelector('.notification-empty');
+             if (!bell || !badge || !dropdown || !list || !emptyState) return;
+
+             bell.addEventListener('click', (event) => { 
+                 event.stopPropagation(); 
+                 dropdown.classList.toggle('hidden'); 
+                 document.getElementById('profile-dropdown')?.classList.add('hidden'); 
+             });
+
+             const ordersRef = firebase.database().ref('orders');
+             ordersRef.orderByChild('status').equalTo('Pending Pickup').on('value', (snapshot) => {
+                 const newOrders = snapshot.val(); 
+                 let count = 0; 
+                 list.innerHTML = '';
+                 if (newOrders) { 
+                     const orderKeys = Object.keys(newOrders); 
+                     count = orderKeys.length; 
+                     orderKeys.sort((a, b) => newOrders[b].createdAt - newOrders[a].createdAt).forEach(key => { 
+                         const order = newOrders[key]; 
+                         const item = document.createElement('li'); 
+                         item.className = 'block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0'; 
+                         item.innerHTML = `<p class="font-medium text-gray-900 truncate">New Order: ${order.items[0]?.name || 'Item'}${order.items.length > 1 ? ` (+${order.items.length - 1})` : ''}</p><p class="text-gray-500 text-xs">${new Date(order.createdAt).toLocaleString()}</p>`; 
+                         list.appendChild(item); 
+                     }); 
+                 }
+                 if (count === 0) {
+                    list.appendChild(emptyState);
+                 }
+                 emptyState.classList.toggle('hidden', count > 0);
+                 badge.classList.toggle('visible', count > 0);
+             }, (error) => { 
+                 console.error("Error fetching notifications:", error); 
+                 list.innerHTML = ''; 
+                 emptyState.textContent = "Error loading."; 
+                 list.appendChild(emptyState); 
+                 emptyState.classList.remove('hidden'); 
+                 badge.classList.remove('visible'); 
+             });
+        }
+
+        function showModal(title, formHTML, submitHandler, modalId = 'generic-modal') {
+             // (Same as your file, unchanged)
+             closeModal(); 
+             const modalContainer = document.getElementById('modal-container'); 
+             const modal = document.createElement('div'); 
+             modal.id = modalId; 
+             modal.className = 'modal-overlay';
+             modal.innerHTML = `
+                <div class="modal-content" onclick="event.stopPropagation();">
+                    <div class="flex justify-between items-center border-b border-gray-200 p-5">
+                        <h2 class="text-xl font-semibold text-gray-900">${title}</h2>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                    </div>
+                    <form id="${modalId}-form">
+                        <div class="p-6">${formHTML}</div>
+                        <div class="flex justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+                            <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Cancel</button>
+                            <button type="submit" class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Save</button>
+                        </div>
+                    </form>
+                </div>`;
+             modalContainer.appendChild(modal); 
+             modal.addEventListener('click', closeModal); 
+             document.getElementById(`${modalId}-form`).addEventListener('submit', submitHandler);
+        }
+
+        // MODIFIED: Added a separate modal function for just showing details
+        function showDetailsModal(title, contentHTML) {
+             closeModal(); 
+             const modalContainer = document.getElementById('modal-container'); 
+             const modal = document.createElement('div'); 
+             modal.id = 'details-modal'; 
+             modal.className = 'modal-overlay';
+             modal.innerHTML = `
+                <div class="modal-content" onclick="event.stopPropagation();">
+                    <div class="flex justify-between items-center border-b border-gray-200 p-5">
+                        <h2 class="text-xl font-semibold text-gray-900">${title}</h2>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                    </div>
+                    <div class="p-6 max-h-[60vh] overflow-y-auto">${contentHTML}</div>
+                    <div class="flex justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">Close</button>
+                    </div>
+                </div>`;
+             modalContainer.appendChild(modal); 
+             modal.addEventListener('click', closeModal);
+        }
+
+        function closeModal() { 
+            // (Same as your file, unchanged)
+            const modal = document.getElementById('modal-container').querySelector('.modal-overlay'); 
+            if (modal) modal.remove(); 
+        }
+        
+        // --- Event Specific Logic ---
+        const AdminEventsModule = {
+            allEvents: {},
+            allRsvps: {},  // ADDED: Cache for all RSVP data
+            allUsers: {},  // ADDED: Cache for user data
+            currentFilter: 'all',
+            currentSearch: '',
+
+            init: (user) => {
+                document.getElementById('new-event-btn').addEventListener('click', AdminEventsModule.showCreateModal);
+                document.getElementById('search-events').addEventListener('input', (e) => {
+                    AdminEventsModule.currentSearch = e.target.value.toLowerCase();
+                    AdminEventsModule.renderEvents();
+                });
+                document.getElementById('filter-events').addEventListener('change', (e) => {
+                    AdminEventsModule.currentFilter = e.target.value;
+                    AdminEventsModule.renderEvents();
+                });
+
+                // ADDED: Listen for all users (to map IDs to names)
+                firebase.database().ref('users').on('value', (snapshot) => {
+                    AdminEventsModule.allUsers = snapshot.val() || {};
+                    // Re-render if data is already present
+                    if (Object.keys(AdminEventsModule.allEvents).length > 0) {
+                        AdminEventsModule.renderEvents();
+                    }
+                }, AdminEventsModule.handleFirebaseError);
+
+                const eventsRef = firebase.database().ref('events');
+                eventsRef.on('value', (snapshot) => {
+                    AdminEventsModule.allEvents = snapshot.val() || {};
+                    AdminEventsModule.renderEvents();
+                }, AdminEventsModule.handleFirebaseError);
+                
+                // ADDED: Listen for all RSVP data
+                const rsvpRef = firebase.database().ref('event_rsvps_by_event');
+                rsvpRef.on('value', (snapshot) => {
+                    AdminEventsModule.allRsvps = snapshot.val() || {};
+                    AdminEventsModule.renderEvents(); // Re-render when RSVP counts change
+                }, AdminEventsModule.handleFirebaseError);
+            },
+            
+            // ADDED: New helper function to format date ranges
+            formatEventDateTime: (isoStart, isoEnd) => {
+                try {
+                    const start = new Date(isoStart);
+                    const end = isoEnd ? new Date(isoEnd) : null;
+                    
+                    const options = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+                    
+                    if (!end || start.toDateString() === end.toDateString()) {
+                        // Same day event
+                        const endTime = end ? end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'N/A';
+                        return `${start.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })} <br> ${start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} - ${endTime}`;
+                    } else {
+                        // Multi-day event
+                        return `${start.toLocaleString([], options)} <br> to ${end.toLocaleString([], options)}`;
+                    }
+                } catch (e) {
+                    return "Invalid Date";
+                }
+            },
+
+            // MODIFIED: Updated render logic
+            renderEvents: () => {
+                const tableBody = document.getElementById('events-table-body');
+                const emptyState = document.getElementById('events-empty-state');
+                tableBody.innerHTML = ''; 
+                emptyState.classList.add('hidden');
+                
+                const now = new Date();
+                let hasVisibleEvents = false;
+
+                const eventIds = Object.keys(AdminEventsModule.allEvents);
+                eventIds.sort((a, b) => (new Date(AdminEventsModule.allEvents[b]?.date || 0) - new Date(AdminEventsModule.allEvents[a]?.date || 0)));
+
+                eventIds.forEach(id => {
+                    const event = { id, ...AdminEventsModule.allEvents[id] };
+                    if (!event.title || !event.date) return;
+
+                    const eventStart = new Date(event.date);
+                    // Use endDate if it exists, otherwise, for logic, assume it ends 1 hour after start (for old data)
+                    const eventEnd = event.endDate ? new Date(event.endDate) : new Date(eventStart.getTime() + 3600000);
+                    
+                    if (isNaN(eventStart)) return; 
+                    
+                    let statusLabel = '';
+                    let statusClass = '';
+                    
+                    // NEW Status Logic
+                    if (now < eventStart) {
+                        statusLabel = 'Upcoming';
+                        statusClass = 'status-upcoming';
+                    } else if (now >= eventStart && now <= eventEnd) {
+                        statusLabel = 'Ongoing';
+                        statusClass = 'status-ongoing';
+                    } else {
+                        statusLabel = 'Past';
+                        statusClass = 'status-past';
+                    }
+                    const isPast = (statusLabel === 'Past');
+
+                    // MODIFIED: Filter Logic
+                    const matchesSearch = !AdminEventsModule.currentSearch || event.title.toLowerCase().includes(AdminEventsModule.currentSearch);
+                    const matchesFilter = AdminEventsModule.currentFilter === 'all' || 
+                                          (AdminEventsModule.currentFilter === 'upcoming' && !isPast) || // "Upcoming" filter now shows "Upcoming" + "Ongoing"
+                                          (AdminEventsModule.currentFilter === 'past' && isPast);
+
+                    if (matchesSearch && matchesFilter) {
+                        hasVisibleEvents = true;
+                        
+                        const rsvpList = AdminEventsModule.allRsvps[id] || {};
+                        const rsvpCount = Object.keys(rsvpList).length;
+                        
+                        const formattedDateTime = AdminEventsModule.formatEventDateTime(event.date, event.endDate);
+
+                        const row = tableBody.insertRow();
+                        row.innerHTML = `
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">${event.title}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500">${formattedDateTime}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500">${event.location || 'N/A'}</td>
+                            <td class="px-4 py-3 text-sm">
+                                <span class="status-badge ${statusClass}">
+                                    ${statusLabel}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-center font-medium text-gray-700">${rsvpCount}</td>
+                            <td class="px-4 py-3 text-sm item-actions">
+                                <button class="inline-flex items-center rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50" 
+                                        onclick="AdminEventsModule.viewAttendees('${id}')" ${rsvpCount === 0 ? 'disabled' : ''}>
+                                    View Attendees
+                                </button>
+                                <button class="inline-flex items-center rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50" 
+                                        onclick="AdminEventsModule.showEditModal('${id}')">
+                                    Edit
+                                </button>
+                                <button class="inline-flex items-center rounded border border-transparent bg-red-100 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-200" 
+                                        onclick="AdminEventsModule.deleteEvent('${id}')">
+                                    Delete
+                                </button>
+                            </td>
+                        `;
+                    }
+                });
+
+                if (!hasVisibleEvents) {
+                    tableBody.innerHTML = ''; 
+                    emptyState.classList.remove('hidden');
+                }
+            },
+            
+            // ADDED: New function to view attendees
+            viewAttendees: (eventId) => {
+                const event = AdminEventsModule.allEvents[eventId];
+                const rsvpList = AdminEventsModule.allRsvps[eventId] || {};
+                const userIds = Object.keys(rsvpList);
+                
+                let contentHTML = '';
+                if (userIds.length === 0) {
+                    contentHTML = '<p class="text-gray-500">There are no attendees for this event yet.</p>';
+                } else {
+                    contentHTML = '<ul class="divide-y divide-gray-200">';
+                    let attendeesFound = 0;
+                    userIds.forEach(uid => {
+                        const user = AdminEventsModule.allUsers[uid];
+                        const name = user ? (user.fullName || user.email) : 'Unknown User'; // Use fullName if available
+                        const email = user ? user.email : uid;
+                        if(user) { // Only show users that exist in the /users table
+                            attendeesFound++;
+                            contentHTML += `
+                                <li class="py-3">
+                                    <p class="text-sm font-medium text-gray-900">${name}</p>
+                                    <p class="text-sm text-gray-500">${email}</p>
+                                </li>
+                            `;
+                        }
+                    });
+                    if (attendeesFound === 0) {
+                         contentHTML = '<p class="text-gray-500">Attendees are registered, but their user profiles could not be loaded.</p>';
+                    }
+                    contentHTML += '</ul>';
+                }
+                
+                showDetailsModal(`Attendees for ${event.title || 'Event'} (${userIds.length})`, contentHTML);
+            },
+
+            // MODIFIED: Added End Date field
+            showCreateModal: () => {
+                 const formHTML = `
+                    <div class="space-y-4">
+                        <div>
+                            <label for="event-title" class="block text-sm font-medium text-gray-700">Event Title</label>
+                            <input type="text" id="event-title" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="event-start-date" class="block text-sm font-medium text-gray-700">Start Date & Time</label>
+                                <input type="datetime-local" id="event-start-date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="event-end-date" class="block text-sm font-medium text-gray-700">End Date & Time</label>
+                                <input type="datetime-local" id="event-end-date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                        </div>
+                         <div>
+                            <label for="event-location" class="block text-sm font-medium text-gray-700">Location</label>
+                            <input type="text" id="event-location" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="event-description" class="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea id="event-description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
+                        </div>
+                    </div>`;
+                showModal('Create New Event', formHTML, AdminEventsModule.handleCreate);
+            },
+            
+            // MODIFIED: Saves start and end date
+            handleCreate: (event) => {
+                 event.preventDefault();
+                const title = document.getElementById('event-title').value.trim();
+                const startDateValue = document.getElementById('event-start-date').value; // Changed ID
+                const endDateValue = document.getElementById('event-end-date').value; // ADDED
+                const location = document.getElementById('event-location').value.trim();
+                const description = document.getElementById('event-description').value.trim();
+
+                if (!title || !startDateValue || !endDateValue || !location) { // ADDED endDateValue
+                    alert("All fields (Title, Start, End, Location) are required.");
+                    return;
+                }
+                
+                if (new Date(endDateValue) <= new Date(startDateValue)) {
+                    alert("End date must be after the start date.");
+                    return;
+                }
+
+                const newEvent = {
+                    title,
+                    date: new Date(startDateValue).toISOString(), // 'date' is the start date
+                    endDate: new Date(endDateValue).toISOString(), // ADDED
+                    location,
+                    description,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                firebase.database().ref('events').push(newEvent)
+                    .then(() => closeModal())
+                    .catch(AdminEventsModule.handleFirebaseError);
+            },
+            
+            // MODIFIED: Loads start and end date
+            showEditModal: (id) => {
+                const event = AdminEventsModule.allEvents[id];
+                if (!event) return;
+                
+                const formatForInput = (isoString) => {
+                    if (!isoString) return '';
+                    try {
+                        const date = new Date(isoString);
+                        if (isNaN(date)) return '';
+                        const tzOffset = date.getTimezoneOffset() * 60000;
+                        return (new Date(date - tzOffset)).toISOString().slice(0, 16);
+                    } catch (e) { return ''; }
+                };
+
+                const startDateLocal = formatForInput(event.date);
+                const endDateLocal = formatForInput(event.endDate); // ADDED
+
+                 const formHTML = `
+                     <div class="space-y-4">
+                        <div>
+                            <label for="event-title-edit" class="block text-sm font-medium text-gray-700">Event Title</label>
+                            <input type="text" id="event-title-edit" value="${event.title || ''}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm ...">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="event-start-date-edit" class="block text-sm font-medium text-gray-700">Start Date & Time</label>
+                                <input type="datetime-local" id="event-start-date-edit" value="${startDateLocal}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm ...">
+                            </div>
+                            <div>
+                                <label for="event-end-date-edit" class="block text-sm font-medium text-gray-700">End Date & Time</label>
+                                <input type="datetime-local" id="event-end-date-edit" value="${endDateLocal}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm ...">
+                            </div>
+                        </div>
+                         <div>
+                            <label for="event-location-edit" class="block text-sm font-medium text-gray-700">Location</label>
+                            <input type="text" id="event-location-edit" value="${event.location || ''}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm ...">
+                        </div>
+                        <div>
+                            <label for="event-description-edit" class="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea id="event-description-edit" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm ...">${event.description || ''}</textarea>
+                        </div>
+                    </div>`;
+                showModal('Edit Event', formHTML, (e) => AdminEventsModule.handleEdit(e, id), `edit-event-${id}`);
+            },
+
+            // MODIFIED: Updates start and end date
+            handleEdit: (event, id) => {
+                event.preventDefault();
+                const title = document.getElementById('event-title-edit').value.trim();
+                const startDateValue = document.getElementById('event-start-date-edit').value; // Changed ID
+                const endDateValue = document.getElementById('event-end-date-edit').value; // ADDED
+                const location = document.getElementById('event-location-edit').value.trim();
+                const description = document.getElementById('event-description-edit').value.trim();
+
+                if (!title || !startDateValue || !endDateValue || !location) { // ADDED endDateValue
+                     alert("All fields (Title, Start, End, Location) are required.");
+                    return;
+                }
+                
+                if (new Date(endDateValue) <= new Date(startDateValue)) {
+                    alert("End date must be after the start date.");
+                    return;
+                }
+
+                const updatedEvent = { 
+                    title, 
+                    date: new Date(startDateValue).toISOString(), // 'date' is start date
+                    endDate: new Date(endDateValue).toISOString(), // ADDED
+                    location, 
+                    description 
+                };
+                
+                firebase.database().ref(`events/${id}`).update(updatedEvent)
+                    .then(() => closeModal())
+                    .catch(AdminEventsModule.handleFirebaseError);
+            },
+
+            deleteEvent: (id) => {
+                 if (confirm('Are you sure you want to delete this event? This will also remove all RSVPs.')) {
+                    const updates = {};
+                    updates[`/events/${id}`] = null;
+                    updates[`/event_rsvps_by_event/${id}`] = null;
+                    
+                    const rsvpUserRef = firebase.database().ref(`event_rsvps_by_user`);
+                    rsvpUserRef.once('value').then(snapshot => {
+                        snapshot.forEach(userRsvps => {
+                            if (userRsvps.hasChild(id)) {
+                                updates[`/event_rsvps_by_user/${userRsvps.key}/${id}`] = null;
+                            }
+                        });
+                        firebase.database().ref().update(updates)
+                            .catch(AdminEventsModule.handleFirebaseError);
+                    });
+                }
+            },
+            
+            handleFirebaseError: (error) => {
+                console.error("Firebase Error:", error);
+                alert("An error occurred: " + error.message);
+            }
+        };
+
+        // --- Initialize Page ---
+        document.addEventListener('DOMContentLoaded', () => {
+             const loadingOverlay = document.getElementById('loading');
+             loadingOverlay.style.display = 'flex'; // Show loading
+
+            document.getElementById('hamburger-btn').addEventListener('click', () => {
+                document.getElementById('admin-sidebar').classList.toggle('is-open');
+                document.getElementById('admin-sidebar').classList.toggle('-translate-x-full'); 
+            });
+            
+             // Global click listener to close dropdowns
+            document.addEventListener('click', (event) => {
+                 const profileDropdown = document.getElementById('profile-dropdown');
+                 const notificationDropdown = document.getElementById('notification-dropdown');
+                 const userProfileButton = document.getElementById('user-profile');
+                 const notificationBell = document.getElementById('notification-bell');
+                 if (profileDropdown && !profileDropdown.classList.contains('hidden') && !userProfileButton?.contains(event.target) && !profileDropdown.contains(event.target)) { profileDropdown.classList.add('hidden'); }
+                 if (notificationDropdown && !notificationDropdown.classList.contains('hidden') && !notificationBell?.contains(event.target) && !notificationDropdown.contains(event.target)) { notificationDropdown.classList.add('hidden'); }
+             });
+
+            firebase.auth().onAuthStateChanged(async (user) => {
+                 if (!user) { window.location.href = '../login.html'; return; }
+                try {
+                    const roleSnapshot = await firebase.database().ref(`users/${user.uid}/role`).once('value');
+                    const role = roleSnapshot.val();
+                    if (role !== 'admin') { await firebase.auth().signOut(); window.location.href = '../login.html'; return; }
+                    
+                    setupProfileDropdown(user); 
+                    initNotifications(user);
+                    AdminEventsModule.init(user); // Initialize events logic
+                    
+                } catch (error) { console.error("Initialization error:", error); window.location.href = '../login.html'; } 
+                finally { loadingOverlay.style.display = 'none'; } // Hide loading
+            });
+        });
+        
+    </script>
+
+</body>
+</html>

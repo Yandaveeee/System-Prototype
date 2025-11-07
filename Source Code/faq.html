@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQs - CampusCore</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="assets/icons/favicon.ico">
+    <style>
+        /* Apply Inter font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple spinner for loading */
+        .loading-spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s;
+        }
+        .hidden {
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- Styles for FAQ Accordion --- */
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+        .faq-question.open + .faq-answer {
+            max-height: 200px; /* Adjust as needed */
+        }
+        .faq-question .icon {
+            transition: transform 0.3s ease-in-out;
+        }
+        .faq-question.open .icon {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
+        <nav class="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-16 items-center justify-between">
+                <!-- Logo -->
+                <div class="flex flex-shrink-0 items-center space-x-8">
+                    <a href="/" class="text-2xl font-bold text-indigo-600">CampusCore</a>
+                    <!-- Main Nav Links -->
+                    <div class="hidden md:flex md:space-x-6">
+                        <a href="/#features" class="text-sm font-medium text-gray-600 hover:text-indigo-600">Features</a>
+                        <a href="faq.html" class="text-sm font-medium text-indigo-600">FAQs</a> <!-- Active link -->
+                        <a href="contact.html" class="text-sm font-medium text-gray-600 hover:text-indigo-600">Contact</a>
+                    </div>
+                </div>
+                
+                <!-- Auth Buttons & User Menu -->
+                <div class="flex items-center space-x-4">
+                    <div id="auth-buttons" class="hidden">
+                        <a href="login.html" class="text-sm font-medium text-gray-600 hover:text-indigo-600">Login</a>
+                        <a href="register.html" class="ml-4 inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">Register</a>
+                    </div>
+                    <div id="user-menu" class="hidden">
+                        <div class="flex items-center space-x-3">
+                            <div id="user-avatar" class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-sm font-medium text-white"></div>
+                            <span id="user-name" class="hidden text-sm font-medium text-gray-700 sm:block"></span>
+                            <button id="logout-btn" class="text-sm font-medium text-gray-600 hover:text-indigo-600">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- --- FAQ Section --- -->
+        <section id="faq" class="bg-gray-50 py-20 sm:py-28">
+            <div class="container mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-2xl text-center">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Frequently Asked Questions</h2>
+                    <p class="mt-4 text-lg leading-8 text-gray-600">
+                        Have questions? We've got answers.
+                    </p>
+                </div>
+                <div class="mt-16 space-y-4">
+                    <!-- FAQ Item 1 -->
+                    <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+                        <button class="faq-question flex w-full items-center justify-between p-6 text-left">
+                            <span class="text-lg font-medium text-gray-900">What is CampusCore?</span>
+                            <span class="icon text-gray-400">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </span>
+                        </button>
+                        <div class="faq-answer px-6 pb-6">
+                            <p class="text-base text-gray-600">
+                                CampusCore is an all-in-one platform designed for students and faculty. It combines announcements, event management, academic resources, a lost & found service, and a campus marketplace into a single, easy-to-use hub.
+                            </p>
+                        </div>
+                    </div>
+                    <!-- FAQ Item 2 -->
+                    <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+                        <button class="faq-question flex w-full items-center justify-between p-6 text-left">
+                            <span class="text-lg font-medium text-gray-900">How does the Marketplace work?</span>
+                            <span class="icon text-gray-400">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </span>
+                        </button>
+                        <div class="faq-answer px-6 pb-6">
+                            <p class="text-base text-gray-600">
+                                Students can buy and sell items like textbooks, furniture, and electronics. Sellers list their items, and buyers can browse, add items to their cart, and "purchase" them. After purchase, you receive a confirmation to pick up the item at the central campus market office.
+                            </p>
+                        </div>
+                    </div>
+                    <!-- FAQ Item 3 -->
+                    <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+                        <button class="faq-question flex w-full items-center justify-between p-6 text-left">
+                            <span class="text-lg font-medium text-gray-900">I lost my ID. What do I do?</span>
+                            <span class="icon text-gray-400">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </span>
+                        </button>
+                        <div class="faq-answer px-6 pb-6">
+                            <p class="text-base text-gray-600">
+                                You can check the "Lost & Found" section to see if someone has reported it. You can also create a "lost item" post with details about your ID. If someone finds it, they can contact you through the platform.
+                            </p>
+                        </div>
+                    </div>
+                     <!-- FAQ Item 4 -->
+                    <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+                        <button class="faq-question flex w-full items-center justify-between p-6 text-left">
+                            <span class="text-lg font-medium text-gray-900">Who can post announcements?</span>
+                            <span class="icon text-gray-400">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </span>
+                        </button>
+                        <div class="faq-answer px-6 pb-6">
+                            <p class="text-base text-gray-600">
+                                Official announcements are posted by campus administration and faculty. This ensures you receive verified, important information directly from the source.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400">
+        <div class="container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <div class="flex justify-center space-x-6">
+                <a href="/#features" class="text-sm hover:text-white">Features</a>
+                <a href="faq.html" class="text-sm hover:text-white">FAQs</a>
+                <a href="contact.html" class="text-sm hover:text-white">Contact</a>
+            </div>
+            <div class="mt-8 text-center">
+                <p class="text-base">&copy; 2024 CampusCore. All rights reserved.</p>
+                <p class="mt-2 text-sm">A project to unify campus life.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="js/config/firebase.js"></script>
+    <script src="js/modules/auth.js"></script>
+    <script src="js/modules/ui.js"></script>
+    
+    <!-- Inline script for auth state handling and FAQs -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loading = document.getElementById('loading');
+            const authButtons = document.getElementById('auth-buttons');
+            const userMenu = document.getElementById('user-menu');
+            const userName = document.getElementById('user-name');
+            const userAvatar = document.getElementById('user-avatar');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            // Show loading by default, but hide it quickly if auth is fast
+            loading.classList.remove('hidden');
+
+            if (typeof window.AuthModule === 'undefined') {
+                console.error('AuthModule is not loaded. Make sure js/modules/auth.js is correct.');
+                loading.classList.add('hidden');
+                authButtons.classList.remove('hidden');
+                userMenu.classList.add('hidden');
+                return;
+            }
+
+            window.AuthModule.onAuthStateChanged(async (user) => {
+                if (user) {
+                    // User is logged in
+                    const displayName = user.displayName || user.email.split('@')[0];
+                    const userInitial = displayName.charAt(0).toUpperCase();
+
+                    userName.textContent = displayName;
+                    userAvatar.textContent = userInitial;
+                    
+                    authButtons.classList.add('hidden');
+                    userMenu.classList.remove('hidden');
+                    
+                } else {
+                    // User is logged out
+                    authButtons.classList.remove('hidden');
+                    userMenu.classList.add('hidden');
+                }
+                loading.classList.add('hidden'); // Hide loading once auth is checked
+            });
+
+            if(logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    loading.classList.remove('hidden');
+                    window.AuthModule.signOut().then(() => {
+                        console.log('User signed out');
+                        // No redirect needed, auth listener will hide menu
+                    }).catch(error => {
+                        console.error('Sign out error', error);
+                        loading.classList.add('hidden');
+                    });
+                });
+            }
+
+            // --- FAQ Accordion Logic ---
+            const faqQuestions = document.querySelectorAll('.faq-question');
+            faqQuestions.forEach(question => {
+                question.addEventListener('click', () => {
+                    // Close all other open answers
+                    faqQuestions.forEach(q => {
+                        if (q !== question) {
+                            q.classList.remove('open');
+                        }
+                    });
+                    // Toggle the clicked question
+                    question.classList.toggle('open');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

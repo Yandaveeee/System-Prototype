@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Lost & Found - CampusCore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="../assets/icons/favicon.ico"> 
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        :root { --primary-color: #4f46e5; --primary-hover: #4338ca; --text-primary: #111827; --text-secondary: #6b7280; --bg-body: #f9fafb; --bg-sidebar: #ffffff; --bg-content: #ffffff; --border-color: #e5e7eb; --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05); --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); --radius: 0.5rem; }
+        .sidebar { transition: transform 0.3s ease-in-out; }
+        .sidebar.is-open { transform: translateX(0); box-shadow: var(--shadow-md); }
+        .loading-spinner { border: 4px solid #f3f4f6; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        .loading-overlay { position: fixed; inset: 0; background-color: rgba(255, 255, 255, 0.9); display: none; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.3s; }
+        .hidden { display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .notification-badge { position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; background-color: #ef4444; border-radius: 50%; border: 2px solid var(--bg-content); transform: scale(0); transition: transform 0.2s ease-out; }
+        .notification-badge.visible { transform: scale(1); }
+        .profile-dropdown, .notification-dropdown { z-index: 50; }
+        /* Modal Styles */
+        .modal-overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+        .modal-content { background-color: white; border-radius: 0.5rem; box-shadow: var(--shadow-md); width: 100%; max-width: 550px; max-height: 90vh; overflow-y: auto; }
+        /* Table Style */
+        .data-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .data-table th, .data-table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        .data-table th { font-weight: 600; color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase; background-color: #f9fafb; }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+        .item-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        /* Status Badges */
+        .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
+        .status-lost { background-color: #fee2e2; color: #991b1b; } /* Red */
+        .status-found { background-color: #dcfce7; color: #166534; } /* Green */
+        .status-resolved { background-color: #e5e7eb; color: #4b5563; } /* Gray */
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="loading" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-[260px_1fr] h-screen">
+        <aside id="admin-sidebar" class="bg-white border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 w-64 z-30 transform -translate-x-full md:translate-x-0 md:static">
+             <div class="px-6 py-4 border-b border-gray-200">
+                <a href="dashboard.html" class="text-2xl font-bold text-indigo-600">CampusCore</a>
+            </div>
+            <nav class="flex-grow p-4 space-y-1">
+                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    Dashboard
+                </a>
+                <a href="manage-announcements.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                   <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.144-6.126A.75.75 0 015.5 12.632v-1.264a.75.75 0 01.621-.74l6.164-1.898a.75.75 0 01.88 0l6.164 1.898a.75.75 0 01.621.74v1.264a.75.75 0 01-.121.402l-2.144 6.126A1.76 1.76 0 0113 19.24V5.882" /></svg>
+                    Announcements
+                </a>
+                <a href="manage-events.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    Events
+                </a>
+                <a href="manage-resources.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    Resources
+                </a>
+                 <a href="manage-lost-found.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md bg-indigo-600 text-white">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 10.5a.5.5 0 01.5-.5h3a.5.5 0 010 1h-3a.5.5 0 01-.5-.5z" /></svg>
+                    Lost & Found
+                </a>
+                 <a href="manage-marketplace.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    Marketplace
+                </a>
+                <a href="manage-orders.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002-2h2a2 2 0 002 2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 9h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                    Manage Orders
+                </a>
+                <a href="manage-users.html" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    Manage Users
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-content h-screen overflow-y-auto">
+             <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200">
+                <div class="px-4 sm:px-6 lg:px-8">
+                    <div class="flex h-16 items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                            <button id="hamburger-btn" class="text-gray-500 md:hidden">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
+                            </button>
+                            <h1 class="text-xl font-semibold text-gray-900">Manage Lost & Found</h1>
+                        </div>
+                        <div class="flex items-center gap-4">
+                             <button id="new-item-btn" class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                New Item
+                            </button>
+                            <div class="relative">
+                                <button id="notification-bell" class="relative rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.017 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+                                    <span id="notification-badge" class="notification-badge"></span>
+                                </button>
+                                <div id="notification-dropdown" class="absolute right-0 mt-2 w-80 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden">
+                                    <div class="py-1">
+                                         <div class="px-4 py-2 text-sm font-semibold text-gray-900 border-b border-gray-200">New Orders</div>
+                                         <ul id="notification-list" class="max-h-60 overflow-y-auto">
+                                            <li class="notification-empty px-4 py-3 text-sm text-gray-500 text-center">No new orders.</li>
+                                         </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <button id="user-profile" class="flex items-center rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                    <span class="sr-only">Open user menu</span>
+                                    <div id="header-user-avatar" class="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-sm font-medium text-white overflow-hidden">A</div>
+                                </button>
+                                <div id="profile-dropdown" class="absolute right-0 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden">
+                                    <div class="py-1">
+                                        <div class="border-b border-gray-200 px-4 py-3">
+                                            <p id="profile-name" class="text-sm font-medium text-gray-900 truncate">Admin Name</p>
+                                            <p id="profile-email" class="text-sm text-gray-500 truncate">admin@example.com</p>
+                                        </div>
+                                        <div class="py-1">
+                                            <a href="profile.html" class="flex items-center gap-2 text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100">
+                                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                                View Profile
+                                            </a>
+                                        </div>
+                                        <div class="border-t border-gray-200 py-1">
+                                             <button id="profile-menu-logout" class="flex items-center gap-2 text-gray-700 block w-full px-4 py-2 text-left text-sm hover:bg-gray-100">
+                                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                                                Logout
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="p-4 sm:p-6 lg:p-8">
+                <div class="overflow-hidden rounded-lg bg-white shadow border border-gray-200">
+                    <div class="flex flex-wrap items-center gap-4 p-4 border-b border-gray-200 bg-gray-50">
+                        <div class="relative flex-grow">
+                             <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg>
+                            </span>
+                            <input type="search" id="search-items" class="w-full rounded-md border border-gray-300 py-2 pl-10 pr-4 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Search items...">
+                        </div>
+                        <div class="flex-grow sm:flex-grow-0">
+                            <select id="filter-status" class="w-full sm:w-auto rounded-md border border-gray-300 py-2 pl-3 pr-8 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                <option value="all">All Statuses</option>
+                                <option value="Lost">Lost</option>
+                                <option value="Found">Found</option>
+                                <option value="Resolved">Resolved</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="data-table min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Status</th>
+                                    <th>Location</th>
+                                    <th>Date Reported</th>
+                                    <th>Reported By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="items-table-body" class="divide-y divide-gray-200 bg-white">
+                                <tr><td colspan="6" class="p-6 text-center text-gray-500">Loading items...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                     <div id="items-empty-state" class="p-6 text-center text-gray-500 hidden">No items found.</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <script src="../js/config/firebase.js"></script>
+
+    <script>
+        // --- Shared UI Functions ---
+        function setupProfileDropdown(user) {
+            const userProfileButton = document.getElementById('user-profile');
+            const dropdown = document.getElementById('profile-dropdown');
+            if (!userProfileButton || !dropdown || !user) return;
+            document.getElementById('profile-name').textContent = user.displayName || 'Admin';
+            document.getElementById('profile-email').textContent = user.email || 'No Email';
+            updateAvatarDisplays(user.photoURL, user.displayName);
+            userProfileButton.addEventListener('click', (event) => { 
+                event.stopPropagation(); 
+                dropdown.classList.toggle('hidden'); 
+                document.getElementById('notification-dropdown')?.classList.add('hidden'); 
+            });
+            document.getElementById('profile-menu-logout').addEventListener('click', () => { 
+                if (confirm('Are you sure you want to logout?')) { 
+                    firebase.auth().signOut().then(() => window.location.href = '../login.html'); 
+                } 
+            });
+        }
+
+        function updateAvatarDisplays(imageUrl, displayName) {
+             const avatar = document.getElementById('header-user-avatar');
+             if (!avatar) return;
+             const initial = (displayName || 'A').charAt(0).toUpperCase();
+             avatar.innerHTML = imageUrl ? `<img src="${imageUrl}" alt="Profile" class="h-full w-full object-cover">` : initial;
+        }
+
+        function initNotifications(user) {
+             const bell = document.getElementById('notification-bell'); 
+             const badge = document.getElementById('notification-badge'); 
+             const dropdown = document.getElementById('notification-dropdown'); 
+             const list = document.getElementById('notification-list'); 
+             const emptyState = document.querySelector('.notification-empty');
+             if (!bell || !badge || !dropdown || !list || !emptyState) return;
+
+             bell.addEventListener('click', (event) => { 
+                 event.stopPropagation(); 
+                 dropdown.classList.toggle('hidden'); 
+                 document.getElementById('profile-dropdown')?.classList.add('hidden'); 
+             });
+
+             const ordersRef = firebase.database().ref('orders');
+             ordersRef.orderByChild('status').equalTo('Pending Pickup').on('value', (snapshot) => {
+                 const newOrders = snapshot.val(); 
+                 let count = 0; 
+                 list.innerHTML = '';
+                 if (newOrders) { 
+                     const orderKeys = Object.keys(newOrders); 
+                     count = orderKeys.length; 
+                     orderKeys.sort((a, b) => newOrders[b].createdAt - newOrders[a].createdAt).forEach(key => { 
+                         const order = newOrders[key]; 
+                         const item = document.createElement('li'); 
+                         item.className = 'block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0'; 
+                         item.innerHTML = `<p class="font-medium text-gray-900 truncate">New Order: ${order.items[0]?.name || 'Item'}${order.items.length > 1 ? ` (+${order.items.length - 1})` : ''}</p><p class="text-gray-500 text-xs">${new Date(order.createdAt).toLocaleString()}</p>`; 
+                         list.appendChild(item); 
+                     }); 
+                 }
+                 if (count === 0) {
+                    list.appendChild(emptyState);
+                 }
+                 emptyState.classList.toggle('hidden', count > 0);
+                 badge.classList.toggle('visible', count > 0);
+             }, (error) => { 
+                 console.error("Error fetching notifications:", error); 
+                 list.innerHTML = ''; 
+                 emptyState.textContent = "Error loading."; 
+                 list.appendChild(emptyState); 
+                 emptyState.classList.remove('hidden'); 
+                 badge.classList.remove('visible'); 
+             });
+        }
+
+        function showModal(title, formHTML, submitHandler, modalId = 'generic-modal') {
+             closeModal(); 
+             const modalContainer = document.getElementById('modal-container'); 
+             const modal = document.createElement('div'); 
+             modal.id = modalId; 
+             modal.className = 'modal-overlay';
+             modal.innerHTML = `
+                <div class="modal-content" onclick="event.stopPropagation();">
+                    <div class="flex justify-between items-center border-b border-gray-200 p-5">
+                        <h2 class="text-xl font-semibold text-gray-900">${title}</h2>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                    </div>
+                    <form id="${modalId}-form">
+                        <div class="p-6">${formHTML}</div>
+                        <div class="flex justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+                            <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Cancel</button>
+                            <button type="submit" class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Save</button>
+                        </div>
+                    </form>
+                </div>`;
+             modalContainer.appendChild(modal); 
+             modal.addEventListener('click', closeModal); 
+             document.getElementById(`${modalId}-form`).addEventListener('submit', submitHandler);
+        }
+
+        function closeModal() { 
+            const modal = document.getElementById('modal-container').querySelector('.modal-overlay'); 
+            if (modal) modal.remove(); 
+        }
+        
+        // --- Lost & Found Specific Logic ---
+        const AdminLostFoundModule = {
+            allItems: {}, 
+            currentSearch: '',
+            currentStatusFilter: 'all',
+            currentUser: null,
+
+            init: (user) => {
+                AdminLostFoundModule.currentUser = user;
+                document.getElementById('new-item-btn').addEventListener('click', AdminLostFoundModule.showCreateModal);
+                document.getElementById('search-items').addEventListener('input', (e) => {
+                    AdminLostFoundModule.currentSearch = e.target.value.toLowerCase();
+                    AdminLostFoundModule.renderItems();
+                });
+                document.getElementById('filter-status').addEventListener('change', (e) => {
+                    AdminLostFoundModule.currentStatusFilter = e.target.value;
+                    AdminLostFoundModule.renderItems();
+                });
+
+                const itemsRef = firebase.database().ref('lost_found_items');
+                itemsRef.on('value', (snapshot) => {
+                    AdminLostFoundModule.allItems = snapshot.val() || {};
+                    AdminLostFoundModule.renderItems();
+                }, AdminLostFoundModule.handleFirebaseError);
+            },
+
+            getStatusBadge: (status) => {
+                status = status ? status.toLowerCase() : 'found'; // Default to found if undefined
+                let badgeClass = 'status-resolved'; // Gray default
+                if (status === 'lost') badgeClass = 'status-lost';
+                else if (status === 'found') badgeClass = 'status-found';
+                return `<span class="status-badge ${badgeClass}">${status}</span>`;
+            },
+
+            renderItems: () => {
+                const tableBody = document.getElementById('items-table-body');
+                const emptyState = document.getElementById('items-empty-state');
+                tableBody.innerHTML = ''; 
+                emptyState.classList.add('hidden');
+                
+                let hasVisibleItems = false;
+                const itemIds = Object.keys(AdminLostFoundModule.allItems);
+                
+                itemIds.sort((a, b) => (AdminLostFoundModule.allItems[b].createdAt || 0) - (AdminLostFoundModule.allItems[a].createdAt || 0));
+
+                itemIds.forEach(id => {
+                    const item = { id, ...AdminLostFoundModule.allItems[id] };
+                    if (!item.name) return;
+
+                    const matchesSearch = !AdminLostFoundModule.currentSearch || 
+                                          item.name.toLowerCase().includes(AdminLostFoundModule.currentSearch) ||
+                                          (item.description && item.description.toLowerCase().includes(AdminLostFoundModule.currentSearch));
+                    
+                    const matchesStatus = AdminLostFoundModule.currentStatusFilter === 'all' || 
+                                           (item.status && item.status.toLowerCase() === AdminLostFoundModule.currentStatusFilter.toLowerCase());
+
+                    if (matchesSearch && matchesStatus) {
+                        hasVisibleItems = true;
+                        const row = tableBody.insertRow();
+                        const itemDate = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A';
+                        
+                        let actionsHTML = `
+                            <button class="inline-flex items-center rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50" onclick="AdminLostFoundModule.showEditModal('${id}')">Edit</button>
+                            <button class="inline-flex items-center rounded border border-transparent bg-red-100 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-200" onclick="AdminLostFoundModule.deleteItem('${id}')">Delete</button>
+                        `;
+
+                        if (item.status && item.status.toLowerCase() !== 'resolved') {
+                            actionsHTML += `
+                                <button class="inline-flex items-center rounded border border-transparent bg-green-100 px-2.5 py-1.5 text-xs font-medium text-green-700 hover:bg-green-200" onclick="AdminLostFoundModule.markAsResolved('${id}')">Mark Resolved</button>
+                            `;
+                        }
+
+                        row.innerHTML = `
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">
+                                <div class="flex items-center gap-3">
+                                    <img src="${item.imageUrl || 'https://placehold.co/40x40/e5e7eb/6b7280?text=Img'}" alt="${item.name}" class="h-10 w-10 rounded-md object-cover flex-shrink-0">
+                                    <span class="truncate" title="${item.name}">${item.name}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-500">${AdminLostFoundModule.getStatusBadge(item.status)}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 truncate" title="${item.location || ''}">${item.location || 'N/A'}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500">${itemDate}</td>
+                            <td class="px-4 py-3 text-sm text-gray-500 truncate" title="${item.reporterName || 'N/A'}">${item.reporterName || 'N/A'}</td>
+                            <td class="px-4 py-3 text-sm item-actions">${actionsHTML}</td>
+                        `;
+                    }
+                });
+
+                if (!hasVisibleItems) {
+                    tableBody.innerHTML = ''; 
+                    emptyState.classList.remove('hidden');
+                }
+            },
+
+            showCreateModal: () => {
+                 const formHTML = `
+                    <div class="space-y-4">
+                        <div>
+                            <label for="item-name" class="block text-sm font-medium text-gray-700">Item Name</label>
+                            <input type="text" id="item-name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="e.g., Black iPhone 12">
+                        </div>
+                        <div>
+                            <label for="item-status" class="block text-sm font-medium text-gray-700">Status</label>
+                            <select id="item-status" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                <option value="Found">Found (Item was turned in)</option>
+                                <option value="Lost">Lost (Student reported missing)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="item-location" class="block text-sm font-medium text-gray-700">Location Found/Lost</label>
+                            <input type="text" id="item-location" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="e.g., Library, 2nd Floor">
+                        </div>
+                        <div>
+                            <label for="item-image-url" class="block text-sm font-medium text-gray-700">Image URL (Optional)</label>
+                            <input type="url" id="item-image-url" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="https://...">
+                        </div>
+                        <div>
+                            <label for="item-description" class="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea id="item-description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
+                        </div>
+                    </div>`;
+                showModal('Report New Item', formHTML, AdminLostFoundModule.handleCreate);
+            },
+            
+            handleCreate: (event) => {
+                 event.preventDefault();
+                 const user = AdminLostFoundModule.currentUser;
+                 if (!user) {
+                     alert("You must be logged in.");
+                     return;
+                 }
+
+                const name = document.getElementById('item-name').value.trim();
+                const status = document.getElementById('item-status').value;
+                const location = document.getElementById('item-location').value.trim();
+                const imageUrl = document.getElementById('item-image-url').value.trim();
+                const description = document.getElementById('item-description').value.trim();
+
+                if (!name || !status) {
+                    alert("Item Name and Status are required.");
+                    return;
+                }
+
+                const newItem = {
+                    name,
+                    status,
+                    location,
+                    description,
+                    imageUrl: imageUrl || null,
+                    reporterId: user.uid,
+                    reporterName: user.displayName || 'Admin',
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                firebase.database().ref('lost_found_items').push(newItem)
+                    .then(() => closeModal())
+                    .catch(AdminLostFoundModule.handleFirebaseError);
+            },
+            
+            showEditModal: (id) => {
+                const item = AdminLostFoundModule.allItems[id];
+                if (!item) return;
+                
+                 const formHTML = `
+                    <div class="space-y-4">
+                        <div>
+                            <label for="item-name-edit" class="block text-sm font-medium text-gray-700">Item Name</label>
+                            <input type="text" id="item-name-edit" value="${item.name || ''}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm ...">
+                        </div>
+                         <div>
+                            <label for="item-status-edit" class="block text-sm font-medium text-gray-700">Status</label>
+                            <select id="item-status-edit" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm ...">
+                                <option value="Found">Found</option>
+                                <option value="Lost">Lost</option>
+                                <option value="Resolved">Resolved</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="item-location-edit" class="block text-sm font-medium text-gray-700">Location Found/Lost</label>
+                            <input type="text" id="item-location-edit" value="${item.location || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm ...">
+                        </div>
+                        <div>
+                            <label for="item-image-url-edit" class="block text-sm font-medium text-gray-700">Image URL (Optional)</label>
+                            <input type="url" id="item-image-url-edit" value="${item.imageUrl || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm ...">
+                        </div>
+                        <div>
+                            <label for="item-description-edit" class="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea id="item-description-edit" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm ...">${item.description || ''}</textarea>
+                        </div>
+                    </div>`;
+                showModal('Edit Item', formHTML, (e) => AdminLostFoundModule.handleEdit(e, id), `edit-item-${id}`);
+                // Set the current status in the dropdown
+                document.getElementById('item-status-edit').value = item.status || 'Found';
+            },
+
+            handleEdit: (event, id) => {
+                event.preventDefault();
+                const name = document.getElementById('item-name-edit').value.trim();
+                const status = document.getElementById('item-status-edit').value;
+                const location = document.getElementById('item-location-edit').value.trim();
+                const imageUrl = document.getElementById('item-image-url-edit').value.trim();
+                const description = document.getElementById('item-description-edit').value.trim();
+
+                if (!name || !status) {
+                     alert("Name and Status are required.");
+                    return;
+                }
+
+                const updatedItem = { 
+                    name, 
+                    status,
+                    location,
+                    imageUrl: imageUrl || null, 
+                    description 
+                };
+                
+                firebase.database().ref(`lost_found_items/${id}`).update(updatedItem)
+                    .then(() => closeModal())
+                    .catch(AdminLostFoundModule.handleFirebaseError);
+            },
+
+            deleteItem: (id) => {
+                 if (confirm('Are you sure you want to delete this item report?')) {
+                    firebase.database().ref(`lost_found_items/${id}`).remove()
+                        .catch(AdminLostFoundModule.handleFirebaseError);
+                }
+            },
+            
+            markAsResolved: (id) => {
+                 if (confirm('Are you sure you want to mark this item as Resolved?')) {
+                    firebase.database().ref(`lost_found_items/${id}`).update({ status: 'Resolved' })
+                        .catch(AdminLostFoundModule.handleFirebaseError);
+                }
+            },
+
+            handleFirebaseError: (error) => {
+                console.error("Firebase Error:", error);
+                alert("An error occurred: " + error.message);
+            }
+        };
+
+        // --- Initialize Page ---
+        document.addEventListener('DOMContentLoaded', () => {
+             const loadingOverlay = document.getElementById('loading');
+             loadingOverlay.style.display = 'flex'; // Show loading
+
+            document.getElementById('hamburger-btn').addEventListener('click', () => {
+                document.getElementById('admin-sidebar').classList.toggle('is-open');
+                document.getElementById('admin-sidebar').classList.toggle('-translate-x-full'); 
+            });
+            
+             // Global click listener to close dropdowns
+            document.addEventListener('click', (event) => {
+                 const profileDropdown = document.getElementById('profile-dropdown');
+                 const notificationDropdown = document.getElementById('notification-dropdown');
+                 const userProfileButton = document.getElementById('user-profile');
+                 const notificationBell = document.getElementById('notification-bell');
+                 if (profileDropdown && !profileDropdown.classList.contains('hidden') && !userProfileButton?.contains(event.target) && !profileDropdown.contains(event.target)) { profileDropdown.classList.add('hidden'); }
+                 if (notificationDropdown && !notificationDropdown.classList.contains('hidden') && !notificationBell?.contains(event.target) && !notificationDropdown.contains(event.target)) { notificationDropdown.classList.add('hidden'); }
+             });
+
+            firebase.auth().onAuthStateChanged(async (user) => {
+                 if (!user) { window.location.href = '../login.html'; return; }
+                try {
+                    const roleSnapshot = await firebase.database().ref(`users/${user.uid}/role`).once('value');
+                    const role = roleSnapshot.val();
+                    if (role !== 'admin') { await firebase.auth().signOut(); window.location.href = '../login.html'; return; }
+                    
+                    setupProfileDropdown(user); 
+                    initNotifications(user);
+                    AdminLostFoundModule.init(user); // Initialize Lost & Found logic
+                    
+                } catch (error) { 
+                    console.error("Initialization error:", error); 
+                    // This is where your specific error is happening!
+                    // The 'handleFirebaseError' will show the alert.
+                    AdminLostFoundModule.handleFirebaseError(error);
+                } 
+                finally { loadingOverlay.style.display = 'none'; } // Hide loading
+            });
+        });
+        
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "campuscore",
+  "version": "1.0.0",
+  "description": "Campus Community Platform with Firebase RTDB",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo Building front-end assets...",
+    "test:unit": "echo Running JS Unit Tests...",
+    "test:security": "echo Running Security Rule Tests...",
+    "test:integration": "echo Running Full Integration Tests...",
+    "ci:full": "npm run build && npm run test:unit && npm run test:security && npm run test:integration"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "firebase": "10.7.1"
+  }
+}
